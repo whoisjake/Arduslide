@@ -60,19 +60,6 @@ void shuffle(int *array, int nmemb, int size)
    }
 }
 
-void setup() {
-  arduboy.begin();
-  arduboy.setFrameRate(15);
-  arduboy.initRandomSeed();
-  randomizePuzzle();
-
-  arduboy.tunes.tone(987, 160);
-  delay(160);
-  arduboy.tunes.tone(1318, 400);
-
-  introStarted = millis();
-}
-
 int zeroIndex() {
   for(int i = 0; i < 9; i++) {
     if(puzzle[i] == 0) {
@@ -132,13 +119,44 @@ void checkGameOver() {
     if((i+1) != puzzle[i])
       return;
   }
+  
   gameOver = true;
 }
 
-void loop() {
-  if (!(arduboy.nextFrame()))
-    return;
+void drawBoard() {
+  drawBackground();
 
+  arduboy.fillRect(32,0,64,64,BLACK);
+  arduboy.drawRoundRect(32,0,64,64,1,WHITE);
+    
+  for(int r = 0; r < ROWS; r++) {
+    for(int c = 0; c < COLS; c++) {
+      int i = (r*ROWS) + c;
+      if (puzzle[i] > 0) {
+        arduboy.drawSlowXYBitmap(rects[i][0],rects[i][1],blockImage,20,20,1);
+        arduboy.setCursor(rects[i][0]+X_OFFSET,rects[i][1]+Y_OFFSET);
+        arduboy.print(puzzle[i]);
+      }
+    }
+  }
+}
+
+void drawBackground() {
+  
+}
+
+void drawIntro() {
+  arduboy.drawSlowXYBitmap(0,0,introImage,128,64,1);
+  if ((millis() - introStarted) > 3000) {
+    intro = false;
+  }
+}
+
+void drawGameOver() {
+  arduboy.drawSlowXYBitmap(0,0,winImage,128,64,1);
+}
+
+void handleInput() {
   if (arduboy.pressed(UP_BUTTON)) {
     up_pressed = true;
   } else if (arduboy.pressed(DOWN_BUTTON)) {
@@ -164,31 +182,36 @@ void loop() {
       down_pressed = false;
     }
   }
+}
 
+void setup() {
+  arduboy.begin();
+  arduboy.setFrameRate(15);
+  arduboy.initRandomSeed();
+  randomizePuzzle();
+
+  arduboy.tunes.tone(987, 160);
+  delay(160);
+  arduboy.tunes.tone(1318, 400);
+
+  introStarted = millis();
+}
+
+void loop() {
+  if (!(arduboy.nextFrame()))
+    return;
+
+  handleInput();
   checkGameOver();
   
   arduboy.clear();
 
   if (intro) {
-    arduboy.drawSlowXYBitmap(0,0,introImage,128,64,1);
-    if ((millis() - introStarted) > 3000) {
-      intro = false;
-    }
+    drawIntro();
   } else if (gameOver) {
-    arduboy.drawSlowXYBitmap(0,0,winImage,128,64,1);
-  } else {
-    arduboy.drawRoundRect(32,0,64,64,1,WHITE);
-    
-    for(int r = 0; r < ROWS; r++) {
-      for(int c = 0; c < COLS; c++) {
-        int i = (r*ROWS) + c;
-        if (puzzle[i] > 0) {
-          arduboy.drawSlowXYBitmap(rects[i][0],rects[i][1],blockImage,20,20,1);
-          arduboy.setCursor(rects[i][0]+X_OFFSET,rects[i][1]+Y_OFFSET);
-          arduboy.print(puzzle[i]);
-        }
-      }
-    }
+    drawGameOver();
+  } else {  
+    drawBoard();
   }
   
   arduboy.display();
