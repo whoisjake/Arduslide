@@ -16,10 +16,10 @@ const static int rects[9][2] = {
 
 Arduboy arduboy;
 int puzzle[9] = {0,1,2,3,4,5,6,7,8};
-bool left_pressed,right_pressed,up_pressed,down_pressed = false;
-bool gameOver = false;
-bool intro = true;
+bool left_pressed,right_pressed,up_pressed,down_pressed,a_pressed,b_pressed;
+bool gameOver,intro;
 unsigned long introStarted;
+unsigned long gameStarted;
 
 void randomizePuzzle() {
   shuffle(puzzle, sizeof(puzzle) / sizeof(int), sizeof(int));
@@ -112,6 +112,20 @@ void shiftRight() {
   }
 }
 
+void resetGame() {
+  gameOver = false;
+  intro = true;
+  left_pressed,right_pressed,up_pressed,down_pressed,a_pressed,b_pressed = false;
+  
+  randomizePuzzle();
+
+  arduboy.tunes.tone(987, 160);
+  delay(160);
+  arduboy.tunes.tone(1318, 400);
+
+  introStarted = millis();
+}
+
 void checkGameOver() {
   gameOver = false;
 
@@ -147,9 +161,6 @@ void drawBackground() {
 
 void drawIntro() {
   arduboy.drawSlowXYBitmap(0,0,introImage,128,64,1);
-  if ((millis() - introStarted) > 3000) {
-    intro = false;
-  }
 }
 
 void drawGameOver() {
@@ -165,6 +176,9 @@ void handleInput() {
     left_pressed = true;
   } else if (arduboy.pressed(RIGHT_BUTTON)) {
     right_pressed = true;
+  } else if (arduboy.pressed(A_BUTTON) && arduboy.pressed(B_BUTTON)) {
+    a_pressed = true;
+    b_pressed = true;
   }
 
   if (arduboy.notPressed(UP_BUTTON | DOWN_BUTTON | LEFT_BUTTON | RIGHT_BUTTON)) {
@@ -182,37 +196,48 @@ void handleInput() {
       down_pressed = false;
     }
   }
+
+  if (arduboy.notPressed(A_BUTTON | B_BUTTON)) {
+    if (a_pressed && b_pressed) {
+      resetGame();
+    }
+  }
+}
+
+void checkElapsed() {
+  if (intro) {
+    if ((millis() - introStarted) > 3000) {
+      intro = false;
+      gameStarted = millis();
+    } 
+  }
 }
 
 void setup() {
   arduboy.begin();
   arduboy.setFrameRate(15);
   arduboy.initRandomSeed();
-  randomizePuzzle();
-
-  arduboy.tunes.tone(987, 160);
-  delay(160);
-  arduboy.tunes.tone(1318, 400);
-
-  introStarted = millis();
+  resetGame();
 }
 
 void loop() {
   if (!(arduboy.nextFrame()))
     return;
 
-  handleInput();
-  checkGameOver();
-  
   arduboy.clear();
 
   if (intro) {
     drawIntro();
   } else if (gameOver) {
+    handleInput();
     drawGameOver();
-  } else {  
+  } else {
+    handleInput();
+    checkGameOver();
     drawBoard();
   }
+
+  checkElapsed();
   
   arduboy.display();
 }
