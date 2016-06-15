@@ -18,8 +18,7 @@ Arduboy arduboy;
 int puzzle[9] = {0,1,2,3,4,5,6,7,8};
 bool left_pressed,right_pressed,up_pressed,down_pressed,a_pressed,b_pressed;
 bool gameOver,intro;
-unsigned long introStarted;
-unsigned long gameStarted;
+unsigned long introStarted, gameStarted, gameDuration;
 
 void randomizePuzzle() {
   shuffle(puzzle, sizeof(puzzle) / sizeof(int), sizeof(int));
@@ -127,8 +126,11 @@ void resetGame() {
 }
 
 void checkGameOver() {
-  gameOver = false;
+  if (gameOver)
+    return;
 
+  gameDuration = millis() - gameStarted;
+    
   for(int i = 0; i < 8; i++) {
     if((i+1) != puzzle[i])
       return;
@@ -156,7 +158,14 @@ void drawBoard() {
 }
 
 void drawBackground() {
-  
+  unsigned long m,s;
+  arduboy.setCursor(0,52);
+  m = gameDuration / 1000 / 60;
+  s = gameDuration / 1000 % 60;
+  arduboy.print(m);
+  arduboy.print("m");
+  arduboy.print(s);
+  arduboy.print("s");
 }
 
 void drawIntro() {
@@ -164,7 +173,16 @@ void drawIntro() {
 }
 
 void drawGameOver() {
+  unsigned long m,s;
   arduboy.drawSlowXYBitmap(0,0,winImage,128,64,1);
+  arduboy.setCursor(34,52);
+  arduboy.print("Time: ");
+  m = gameDuration / 1000 / 60;
+  s = gameDuration / 1000 % 60;
+  arduboy.print(m);
+  arduboy.print("m");
+  arduboy.print(s);
+  arduboy.print("s");
 }
 
 void handleInput() {
